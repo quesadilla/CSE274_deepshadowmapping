@@ -9,7 +9,7 @@ ParserObj::ParserObj()
 	facePositions = std::vector<Vector3>();
 	faceNormals = std::vector<Vector3>();
 
-	objScale = 7.5;
+	objScale = 2;
 	objScale2 = 1;
 	S = S.makeScale(objScale, objScale, objScale);
 	S2 = S2.makeScale(objScale2, objScale2, objScale2);
@@ -145,6 +145,27 @@ void ParserObj::draw(Light * rotLight, Matrix4 * glmatrix)
 	}
 
 	glEnd();
+
+	// ground
+	glColor3f(0.0f, 0.0f, 1.0f);
+	glPushMatrix();
+
+	glTranslatef(0.0f, -1.0f, 0.0f);
+	glScalef(2.0f, 0.05f, 2.0f);
+	glutSolidCube(3.0f);
+
+	glPopMatrix();
+
+	// back wall
+	glColor3f(1.0f, 0.0f, 0.0f);
+	glPushMatrix();
+
+	glTranslatef(0.0f, 2.0f, -2.0f);
+	glRotatef(90, 1, 0.0f, 0.0f);
+	glScalef(2.0f, 0.05f, 2.0f);
+	glutSolidCube(3.0f);
+
+	glPopMatrix();
 }
 
 Matrix4& ParserObj::getMatrix()

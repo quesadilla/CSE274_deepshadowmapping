@@ -6,15 +6,15 @@ Light::Light()
 
 	// light properties 0
 	GLfloat light_ambient[] = { 0.0, 0.0, 0.0, 1.0 }; // default
-	GLfloat light_diffuse[] = { 0.0, 1.0, 1.0, 1.0 };
+	GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
 	GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 }; // default
-	GLfloat light_position[] = { 2.0, 4.0, 2.0, 0.0 };
+	GLfloat light_position[] = { 1.0, 2.0, 1.0, 0.0 };
 
 	// light properties 1
 	GLfloat light_ambient1[] = { 0.0, 0.0, 0.0, 1.0 }; // default
 	GLfloat light_diffuse1[] = { 1.0, 0.0, 0.0, 1.0 };
 	GLfloat light_specular1[] = { 1.0, 1.0, 1.0, 1.0 }; // default
-	GLfloat light_position1[] = { -2.0, -3.0, 8.0, 1.0 };
+	GLfloat light_position1[] = { 1.0, 0.0, 4.0, 1.0 };
 	GLfloat spot_direction[] = { 0.0, 0.0, -1.0 };
 
 	// set light properties 0
@@ -42,10 +42,10 @@ Light::Light()
 	glClear(GL_DEPTH_BUFFER_BIT);
 
 	lightMatrix = Matrix4::identity();
-	lightMatrix = Matrix4::makeTranslate(2, 4, 2) * lightMatrix;
+	lightMatrix = Matrix4::makeTranslate(1, 2, 1) * lightMatrix;
 
 	spotlightMatrix = Matrix4::identity();
-	spotlightMatrix = Matrix4::makeTranslate(-2, -3, 8) * spotlightMatrix;
+	spotlightMatrix = Matrix4::makeTranslate(1, 0, 4) * spotlightMatrix;
 
 }
 

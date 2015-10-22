@@ -24,7 +24,6 @@ public:
 	void setY(double y0) { y = y0; };
 	void setZ(double z0) { z = z0; };
 
-private:
 	double x, y, z;
 };
 

@@ -33,9 +33,14 @@ static void speccallback(int key, int x, int y)			{ TESTER->SpecCallback(key, x,
 
 Tester::Tester(int argc,char **argv) {
 
+	//Check for necessary extensions
+	if (!GLEE_ARB_depth_texture || !GLEE_ARB_shadow)
+	{
+		printf("I require ARB_depth_texture and ARB_shadow extensionsn\n");
+	}
+
 	width = 512;   // set window width in pixels here
 	height = 512;   // set window height in pixels here
-	camera_view1 = false;
 	p5_bunny = true;
 	shader = false;
 
@@ -54,8 +59,8 @@ Tester::Tester(int argc,char **argv) {
 
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);   // open an OpenGL context with double buffering, RGB colors, and depth buffering
 	glutInitWindowSize(width, height);      // set initial window size
-	glutCreateWindow("CSE 274");    	      // open window and set window title
-
+	WindowHandle = glutCreateWindow("CSE 274");    	      // open window and set window title
+	glutSetWindow(WindowHandle);
 
 	rotLight = Light();
 
@@ -71,18 +76,12 @@ Tester::Tester(int argc,char **argv) {
 
 	//startShader();
 
-	//WinX=640;
-	//WinY=480;
-	//LeftDown=MiddleDown=RightDown=false;
-	//MouseX=MouseY=0;
+	WinX=640;
+	WinY=480;
+	LeftDown=MiddleDown=RightDown=false;
+	mousex=mousey=0;
 
-	// Create the window
-	//glutInitDisplayMode( GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH );
-	//glutInitWindowSize( WinX, WinY );
-	//glutInitWindowPosition( 0, 0 );
-	//WindowHandle = glutCreateWindow( WINDOWTITLE );
-	//glutSetWindowTitle( WINDOWTITLE );
-	//glutSetWindow( WindowHandle );
+	Cam.SetAspect(float(WinX) / float(WinY));
 
 	// Background color
 	glClearColor( 0., 0., 0., 1. );
@@ -99,19 +98,16 @@ Tester::Tester(int argc,char **argv) {
 	glutMotionFunc( mousemotion );
 	glutPassiveMotionFunc( mousemotion );
 
-	// enable culling
-	//glEnable(GL_CULL_FACE);
-	//glCullFace(GL_BACK);
-	//glEnable(GL_DEPTH_TEST);
-	//glShadeModel(GL_SMOOTH);
+	// --------- shadow mapping tutorial ---------
+	cameraPosition = Vector3(0.0f, 0.0f, -20.0f);
+	lightPosition = Vector3(1.0f, 0.0f, 4.0f);
+
+
+
 
 
 	//glColorMaterial(GL_FRONT, GL_DIFFUSE); // these two lines are VERY IMPORTANT
 	//glEnable(GL_COLOR_MATERIAL); // in order to get glColor to work
-
-	//// enable lighting
-	//glEnable(GL_LIGHTING);
-	//glEnable(GL_LIGHT0);
 
 
 }
@@ -127,21 +123,25 @@ Tester::~Tester() {
 
 void Tester::Update() {
 
+	Cam.Update();
+	currTime = glutGet(GLenum(GLUT_ELAPSED_TIME));
+
 	if (p5_bunny)
 	{
 		bunny.update();
 	}
 
 
-	Draw();
-
+	//Draw();
+	glutSetWindow(WindowHandle);
+	glutPostRedisplay();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 void Tester::Reset() {
-	//Cam.Reset();
-	//Cam.SetAspect(float(WinX)/float(WinY));
+	Cam.Reset();
+	Cam.SetAspect(float(WinX)/float(WinY));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -152,6 +152,8 @@ void Tester::Draw() {
 	glMatrixMode(GL_MODELVIEW);  // make sure we're in Modelview mode
 
 	Matrix4 glmatrix;
+
+	Cam.Draw();
 
 	/* draw a bunny for assignment 5 */
 	if (p5_bunny)
@@ -178,14 +180,19 @@ void Tester::Quit() {
 
 void Tester::Resize(int w,int h) {
 	cerr << "Window::reshapeCallback called" << endl;
-	width = w;
-	height = h;
-	glViewport(0, 0, w, h);  // set new viewport size
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(60.0, double(width) / (double)height, 1.0, 1000.0); // set perspective projection viewing frustum
-	glTranslatef(0, 0, -20);
-	glMatrixMode(GL_MODELVIEW);
+
+	WinX = w;
+	WinY = h;
+	Cam.SetAspect(float(WinX) / float(WinY));
+
+	//width = w;
+	//height = h;
+	//glViewport(0, 0, w, h);  // set new viewport size
+	//glMatrixMode(GL_PROJECTION);
+	//glLoadIdentity();
+	//gluPerspective(60.0, double(width) / (double)height, 1.0, 1000.0); // set perspective projection viewing frustum
+	//glTranslatef(0, 0, -20);
+	//glMatrixMode(GL_MODELVIEW);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -217,7 +224,6 @@ void Tester::SpecCallback(int key, int x, int y) {
 	if (key == GLUT_KEY_F4)
 	{
 		p5_bunny = true;
-		camera_view1 = false;
 	}
 
 
@@ -338,15 +344,15 @@ void Tester::MouseButton(int btn,int state,int x,int y) {
 	}
 
 
-	//if(btn==GLUT_LEFT_BUTTON) {
-	//	LeftDown = (state==GLUT_DOWN);
-	//}
-	//else if(btn==GLUT_MIDDLE_BUTTON) {
-	//	MiddleDown = (state==GLUT_DOWN);
-	//}
-	//else if(btn==GLUT_RIGHT_BUTTON) {
-	//	RightDown = (state==GLUT_DOWN);
-	//}
+	if(btn==GLUT_LEFT_BUTTON) {
+		LeftDown = (state==GLUT_DOWN);
+	}
+	else if(btn==GLUT_MIDDLE_BUTTON) {
+		MiddleDown = (state==GLUT_DOWN);
+	}
+	else if(btn==GLUT_RIGHT_BUTTON) {
+		RightDown = (state==GLUT_DOWN);
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -379,83 +385,77 @@ Vector3 Tester::trackBallMapping(int x, int y)
 
 void Tester::MouseMotion(int nx,int ny) {
 
-	Vector3 direction;
-	float pixel_diff;
-	float rot_angle, zoom_factor;
-	Vector3 curPoint;
+	//Vector3 direction;
+	//float pixel_diff;
+	//float rot_angle;
+	//float zoom_factor;
+	//Vector3 curPoint;
 
 
-	switch (movement)
-	{
-	case ROTATE: // left mouse button is held down
-	{
-		curPoint = trackBallMapping(nx, ny); // map position to a sphere location
-		direction = curPoint - lastPos;
-		float velocity = direction.length();
+	//switch (movement)
+	//{
+	//case ROTATE: // left mouse button is held down
+	//{
+	//	curPoint = trackBallMapping(nx, ny); // map position to a sphere location
+	//	direction = curPoint - lastPos;
+	//	float velocity = direction.length();
 
-		if (velocity > 0.0001) // If little movement - do nothing
-		{
-			std::cout << "ROTATING" << std::endl;
+	//	if (velocity > 0.0001) // If little movement - do nothing
+	//	{
+	//		std::cout << "ROTATING" << std::endl;
 
-			// rotate around axis that's perpendicular to circle connecting mouse movements
-			Vector3 rotAxis = curPoint.cross(lastPos);
-			//Vector3 rotAxis = Globals::lastPos.cross(curPoint);
-			rotAxis.print("rotation axis");
-			rotAxis = rotAxis.normalize();
-			//Vector3 rotAxis = Vector3(0, 1, 0);
-			rot_angle = velocity * ROTSCALE;
+	//		// rotate around axis that's perpendicular to circle connecting mouse movements
+	//		Vector3 rotAxis = curPoint.cross(lastPos);
+	//		//Vector3 rotAxis = Globals::lastPos.cross(curPoint);
+	//		rotAxis.print("rotation axis");
+	//		rotAxis = rotAxis.normalize();
+	//		//Vector3 rotAxis = Vector3(0, 1, 0);
+	//		rot_angle = velocity * ROTSCALE;
 
-			if (p5_bunny)
-			{
-				bunny.setArbitAngle(rot_angle);
-				bunny.setAxis(rotAxis);
+	//		if (p5_bunny)
+	//		{
+	//			bunny.setArbitAngle(rot_angle);
+	//			bunny.setAxis(rotAxis);
 
-			}
-
-			// save current matrix				
-			//glGetDoublev(GL_MODELVIEW_MATRIX, (GLdouble *)Globals::bunny.getMatrix().getPointer());
-			//glLoadIdentity(); // clear matrix
-			//glRotated(rot_angle, rotAxis.getX(), rotAxis.getY(), rotAxis.getZ()); // apply trackball rotation
-
-			//glMultMatrixd((GLdouble *)Globals::bunny.getMatrix().getPointer()); // pre-multiply by saved matrix
-		}
-		break;
-	}
-	case ZOOM:
-	{
-		std::cout << "ZOOMING" << std::endl;
-		pixel_diff = nx - lastPos.getX();
-		zoom_factor = 1.0 + pixel_diff * ZOOMSCALE;
-
-		if (p5_bunny)
-		{
-			bunny.setScale2(zoom_factor);
-		}
-		break;
-	}
-	}
-
-	lastPos = curPoint;
-
-
-
-	//int dx = nx - MouseX;
-	//int dy = -(ny - MouseY);
-
-	//MouseX = nx;
-	//MouseY = ny;
-
-	//// Move camera
-	//// NOTE: this should really be part of Camera::Update()
-	//if(LeftDown) {
-	//	const float rate=1.0f;
-	//	Cam.SetAzimuth(Cam.GetAzimuth()+dx*rate);
-	//	Cam.SetIncline(Cam.GetIncline()-dy*rate);
+	//		}
+	//	}
+	//	break;
 	//}
-	//if(RightDown) {
-	//	const float rate=0.01f;
-	//	Cam.SetDistance(Cam.GetDistance()*(1.0f-dx*rate));
+	//case ZOOM:
+	//{
+	//	std::cout << "ZOOMING" << std::endl;
+	//	pixel_diff = nx - lastPos.getX();
+	//	zoom_factor = 1.0 + pixel_diff * ZOOMSCALE;
+
+	//	if (p5_bunny)
+	//	{
+	//		bunny.setScale2(zoom_factor);
+	//	}
+	//	break;
 	//}
+	//}
+
+	//lastPos = curPoint;
+
+
+
+	int dx = nx - mousex;
+	int dy = -(ny - mousey);
+
+	mousex = nx;
+	mousey = ny;
+
+	// Move camera
+	// NOTE: this should really be part of Camera::Update()
+	if(LeftDown) {
+		const float rate=1.0f;
+		Cam.SetAzimuth(Cam.GetAzimuth()+dx*rate);
+		Cam.SetIncline(Cam.GetIncline()-dy*rate);
+	}
+	if(RightDown) {
+		const float rate=0.01f;
+		Cam.SetDistance(Cam.GetDistance()*(1.0f-dx*rate));
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////

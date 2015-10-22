@@ -5,30 +5,19 @@
 #ifndef CSE169_TESTER_H
 #define CSE169_TESTER_H
 
+#include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
 
-
 #include "GLee.h"
-//#include <GL/glut.h>
 
 #include "Matrix4.h"
 #include "shader.h"
-#include "Camera.h"
 #include "ParserObj.h"
 #include "Light.h"
+#include "ProfCamera.h"
 #include <string>
-
-/*
-- read in the models (OFF file) and display them DONE
-- rotation DONE
-- translation
-- scale and/or zoom in/out DONE
-- average normals, compute face normals DONE
-- make distinct colors (& flat shading)
-- default scale
-*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -54,13 +43,30 @@ public:
 	Vector3 trackBallMapping(int x, int y);
 
 private:
+	// shadow mapping------------
+	//Camera & light positions
+	Vector3 cameraPosition;
+	Vector3 lightPosition;
+
+	//Size of shadow map
+	const int shadowMapSize = 512;
+
+	//Textures
+	GLuint shadowMapTexture;
+
+	//Matrices
+	Matrix4 lightProjectionMatrix, lightViewMatrix;
+	Matrix4 cameraProjectionMatrix, cameraViewMatrix;
+
+	//-----------------
+
 	// Window management
 	int WindowHandle;
 	int WinX,WinY;
 
 	// Input
 	bool LeftDown,MiddleDown,RightDown;
-	int MouseX,MouseY;
+	int mousex,mousey;
 
 	// FPS
 	int frame_count = 0;
@@ -74,8 +80,6 @@ private:
 
 
 	// modes
-	bool camera_view1;
-
 	bool p5_bunny;
 	bool shader;
 
@@ -93,7 +97,7 @@ private:
 	int movement;
 
 	// Components
-	Camera camera;
+	ProfCamera Cam;
 	ParserObj bunny;
 	Vector3 lastPos;
 	Light rotLight;
