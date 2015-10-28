@@ -42,14 +42,14 @@ void ParserObj::draw(Light * rotLight, Matrix4 * glmatrix)
 
 	// camera.recalculateMatrix(e, d, up);
 
-	rotLight->bunnyMaterial();
+	//rotLight->bunnyMaterial();
 
 	rotLight->display();
 
 
 	// load the camera
 	glmatrix = &getMatrix();
-	glmatrix = &(glmatrix->transpose()); // not sure if I'm supposed to transpose this
+	glmatrix = &(glmatrix->transpose()); // change to column-order
 	glMatrixMode(GL_MODELVIEW);
 	glLoadMatrixd(glmatrix->getPointer());
 
@@ -157,7 +157,7 @@ void ParserObj::draw(Light * rotLight, Matrix4 * glmatrix)
 	glPopMatrix();
 
 	// back wall
-	glColor3f(1.0f, 0.0f, 0.0f);
+	glColor3f(1.0f, 1.0f, 1.0f);
 	glPushMatrix();
 
 	glTranslatef(0.0f, 2.0f, -2.0f);

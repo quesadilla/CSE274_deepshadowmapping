@@ -11,6 +11,8 @@ public:
 	Vector4() { x = 0; y = 0; z = 0; w = 1; };
 
 	Vector4(double x0, double y0, double z0, double w0) { x = x0; y = y0; z = z0; w = w0; };
+	Vector4(float * vec4) { x = vec4[0]; y = vec4[1]; z = vec4[2]; w = vec4[3]; };
+	Vector4(Vector3 vec3) { x = vec3.x; y = vec3.y; z = vec3.z; w = 1; }
 
 	~Vector4() { };
 

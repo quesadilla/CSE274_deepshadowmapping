@@ -87,16 +87,13 @@
     <ClCompile Include="..\Matrix4.cpp" />
     <ClCompile Include="..\ParserObj.cpp" />
     <ClCompile Include="..\ProfCamera.cpp" />
-    <ClCompile Include="..\shader.cpp" />
     <ClCompile Include="..\tester.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\GLee.h" />
     <ClInclude Include="..\Light.h" />
     <ClInclude Include="..\Matrix4.h" />
     <ClInclude Include="..\ParserObj.h" />
     <ClInclude Include="..\ProfCamera.h" />
-    <ClInclude Include="..\shader.h" />
     <ClInclude Include="..\tester.h" />
     <ClInclude Include="..\Vector3.h" />
     <ClInclude Include="..\Vector4.h" />

@@ -10,10 +10,10 @@
 #include <stdlib.h>
 #include <iostream>
 
-#include "GLee.h"
+#include <GL/GLee.h>
+#include <GL/glut.h>
 
 #include "Matrix4.h"
-#include "shader.h"
 #include "ParserObj.h"
 #include "Light.h"
 #include "ProfCamera.h"
@@ -45,18 +45,14 @@ public:
 private:
 	// shadow mapping------------
 	//Camera & light positions
-	Vector3 cameraPosition;
-	Vector3 lightPosition;
+	float cameraPosition[3];
+	float lightPosition[3];
 
 	//Size of shadow map
 	const int shadowMapSize = 512;
 
 	//Textures
 	GLuint shadowMapTexture;
-
-	//Matrices
-	Matrix4 lightProjectionMatrix, lightViewMatrix;
-	Matrix4 cameraProjectionMatrix, cameraViewMatrix;
 
 	//-----------------
 
@@ -76,12 +72,10 @@ private:
 
 	// -------- stuff from 167 project
 	int width, height; 	            // window size
-	Shader * fancyShaders;
 
 
 	// modes
 	bool p5_bunny;
-	bool shader;
 
 	double camX;
 	double camY;
@@ -96,6 +90,12 @@ private:
 
 	int movement;
 
+	//float cameraProjectionMatrix[16];
+	Matrix4 cameraProjectionMatrix;
+	Matrix4 cameraViewMatrix;
+	Matrix4 lightProjectionMatrix;
+	Matrix4 lightViewMatrix;
+
 	// Components
 	ProfCamera Cam;
 	ParserObj bunny;
@@ -103,12 +103,5 @@ private:
 	Light rotLight;
 };
 
-////////////////////////////////////////////////////////////////////////////////
-
-/*
-The 'Tester' is a simple top level application class. It creates and manages a
-window with the GLUT extension to OpenGL and it maintains a simple 3D scene
-including a camera and some other components.
-*/
 
 #endif
