@@ -39,7 +39,7 @@ static void speccallback(int key, int x, int y)			{ TESTER->SpecCallback(key, x,
 Tester::Tester(int argc, char **argv) {
 	cameraPosition[0] = 0.0f;
 	cameraPosition[1] = 0.0f;
-	cameraPosition[2] = -20.0f;
+	cameraPosition[2] = -Cam.GetDistance();
 
 	lightPosition[0] = 1.0f;
 	lightPosition[1] = 0.0f;
@@ -49,7 +49,8 @@ Tester::Tester(int argc, char **argv) {
 
 	width = 512;   // set window width in pixels here
 	height = 512;   // set window height in pixels here
-	p5_bunny = true;
+	shadowMap = false;
+	hairModel = false;
 
 	camX = 0;
 	camY = 0;
@@ -59,10 +60,6 @@ Tester::Tester(int argc, char **argv) {
 	movement = OFF;
 	ROTSCALE = 10.0;
 	ZOOMSCALE = .004;
-
-	float specular[] = { 1.0, 1.0, 1.0, 1.0 };
-	float shininess[] = { 100.0 };
-	float position[] = { 0.0, 10.0, 1.0, 0.0 };	// lightsource position
 
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);   // open an OpenGL context with double buffering, RGB colors, and depth buffering
 	glutInitWindowSize(width, height);      // set initial window size
@@ -75,8 +72,14 @@ Tester::Tester(int argc, char **argv) {
 	std::cout << "parsing bunny..." << std::endl;
 	bunny = ParserObj();
 	bunny.parse("C:/Users/Jade/Documents/Graphics/OBJs/bunny.obj");
-	//bunny.parse("C:/Users/Jade/Documents/Visual Studio 2013/Projects/CSE274_deepshadowmapping/hairball_simplified.obj");
+	std::cout << "done parsing bunny. " << std::endl;
 
+	// parse hairball
+	std::cout << "parsing hairball..." << std::endl;
+	hairball = ParserObj();
+	hairball.parse("C:/Users/Jade/Documents/Visual Studio 2013/Projects/CSE274_deepshadowmapping/hairball_simplified.obj");
+	hairball.setScale(.60);
+	hairball.setScale2(1.20);
 	lastPos = Vector3();
 
 	WinX = 640;
@@ -87,7 +90,7 @@ Tester::Tester(int argc, char **argv) {
 	Cam.SetAspect(float(WinX) / float(WinY));
 
 	// Background color
-	glClearColor(0., 0., 0., 1.);
+	//glClearColor(0., 0., 0., 1.);
 
 	// Callbacks
 	glutDisplayFunc(display);
@@ -105,7 +108,6 @@ Tester::Tester(int argc, char **argv) {
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	// --------- shadow mapping tutorial ---------
-
 
 
 	if (!GLEE_ARB_depth_texture || !GLEE_ARB_shadow)
@@ -150,20 +152,26 @@ Tester::Tester(int argc, char **argv) {
 
 	// calculate camera projection matrix
 	glLoadIdentity();
-	gluPerspective(45.0f, (float)width / height, 1.0f, 100.0f);
+	gluPerspective(60.0f, 1.33f, 0.1f, 1000.0f);
 	glGetDoublev(GL_MODELVIEW_MATRIX, cameraProjectionMatrix.getPointer());
+
+	//cameraProjectionMatrix = cameraProjectionMatrix.transpose();
 
 	// calculate camera view matrix
 	glLoadIdentity();
 	gluLookAt(cameraPosition[0], cameraPosition[1], cameraPosition[2],
-		0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, -5.0f,
 		0.0f, 1.0f, 0.0f);
 	glGetDoublev(GL_MODELVIEW_MATRIX, cameraViewMatrix.getPointer());
+
+	//cameraViewMatrix = cameraViewMatrix.transpose();
 
 	// calculate light projection matrix
 	glLoadIdentity();
 	gluPerspective(45.0f, 1.0f, 2.0f, 8.0f);
 	glGetDoublev(GL_MODELVIEW_MATRIX, lightProjectionMatrix.getPointer());
+
+	lightProjectionMatrix = lightProjectionMatrix.transpose();
 
 	// calculate light view matrix
 	glLoadIdentity();
@@ -172,13 +180,16 @@ Tester::Tester(int argc, char **argv) {
 		0.0f, 1.0f, 0.0f);
 	glGetDoublev(GL_MODELVIEW_MATRIX, lightViewMatrix.getPointer());
 
+	lightViewMatrix = lightViewMatrix.transpose();
+
 	glPopMatrix();
 
+	glLightfv(GL_LIGHT1, GL_AMBIENT, gray);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, white);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, white);
 
 	//glColorMaterial(GL_FRONT, GL_DIFFUSE); // these two lines are VERY IMPORTANT
 	//glEnable(GL_COLOR_MATERIAL); // in order to get glColor to work
-
-
 
 }
 
@@ -196,14 +207,18 @@ void Tester::Update() {
 	Cam.Update();
 	currTime = glutGet(GLenum(GLUT_ELAPSED_TIME));
 
-	if (p5_bunny)
+	cameraPosition[0] = 0.0f;
+	cameraPosition[1] = 0.0f;
+	cameraPosition[2] = -Cam.GetDistance();
+
+	if (hairModel)
+	{
+		hairball.update();
+	}
+	else
 	{
 		bunny.update();
-		//Check for necessary extensions
 	}
-
-
-	//Draw();
 	glutSetWindow(WindowHandle);
 	glutPostRedisplay();
 }
@@ -226,147 +241,189 @@ void Tester::Draw() {
 
 	//First pass - from light's point of view
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixd(lightProjectionMatrix.getPointer());
-
 	glMatrixMode(GL_MODELVIEW);
-	glLoadMatrixd(lightViewMatrix.getPointer());
 
-	//Use viewport the same size as the shadow map
-	glViewport(0, 0, shadowMapSize, shadowMapSize);
-
-	//Draw back faces into the shadow map
-	glCullFace(GL_FRONT);
-
-	//Disable color writes, and use flat shading for speed
-	glShadeModel(GL_FLAT);
-	glColorMask(0, 0, 0, 0);
-
-	//Draw the scene
-	bunny.draw(&rotLight, &glmatrix);
-
-	//Read the depth buffer into the shadow map texture
-	glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
-	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, shadowMapSize, shadowMapSize);
-
-	//restore states
-	glCullFace(GL_BACK);
-	glShadeModel(GL_SMOOTH);
-	glColorMask(1, 1, 1, 1);
+	if (!shadowMap)
+	{
+		// so it seems that whatever's messing up the drawing is coming from loading these two matrices...
+		//glLoadIdentity();
+		//gluPerspective(60.0f, 1.33f, 0.1f, 1000.0f);
+		//glGetDoublev(GL_MODELVIEW_MATRIX, cameraProjectionMatrix.getPointer());
 
 
+		//glMatrixMode(GL_PROJECTION);
+		//glLoadMatrixd(cameraProjectionMatrix.getPointer());
+
+		//glMatrixMode(GL_MODELVIEW);
+		//glLoadMatrixd(cameraViewMatrix.getPointer());
+
+		if (hairModel)
+		{
+			hairball.draw(&rotLight, &glmatrix);
+		}
+		else
+		{
+			bunny.draw(&rotLight, &glmatrix);
+		}
+		
+	}
+
+	else{
+		glDisable(GL_LIGHTING);
+
+		//glMatrixMode(GL_PROJECTION);
+		//glLoadMatrixd(lightProjectionMatrix.getPointer());
+
+		//lightProjectionMatrix.print("lightProjectionMatrix:");
+
+		//glMatrixMode(GL_MODELVIEW);
+		//glLoadMatrixd(lightViewMatrix.getPointer());
+		gluLookAt(
+			1, 0, 4,
+			0, 0, -1,
+			0,1,0);
+
+		//lightViewMatrix.print("lightViewMatrix:");
+
+		//Use viewport the same size as the shadow map
+		glViewport(0, 0, shadowMapSize, shadowMapSize);
+
+		//Draw back faces into the shadow map
+		glCullFace(GL_FRONT);
+
+		//Disable color writes, and use flat shading for speed
+		glShadeModel(GL_FLAT);
+		glColorMask(0, 0, 0, 0);
+
+		//Draw the scene
+		if (hairModel) { hairball.draw(&rotLight, &glmatrix); }
+		else { bunny.draw(&rotLight, &glmatrix); }
+
+		//Read the depth buffer into the shadow map texture
+		glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
+		glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, shadowMapSize, shadowMapSize);
+
+		//restore states
+		glCullFace(GL_BACK);
+		glShadeModel(GL_SMOOTH);
+		glColorMask(1, 1, 1, 1);
 
 
-	//2nd pass - Draw from camera's point of view
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadMatrixd(cameraProjectionMatrix.getPointer());
-
-	glMatrixMode(GL_MODELVIEW);
-	glLoadMatrixd(cameraViewMatrix.getPointer());
-
-	glViewport(0, 0, width, height);
-
-	//Use dim light to represent shadowed areas
-	glLightfv(GL_LIGHT1, GL_POSITION, lightPosition);
-	glLightfv(GL_LIGHT1, GL_AMBIENT, gray);
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, gray);
-	glLightfv(GL_LIGHT1, GL_SPECULAR, black);
-	glEnable(GL_LIGHT1);
-	glEnable(GL_LIGHTING);
-
-	bunny.draw(&rotLight, &glmatrix);
 
 
+		//2nd pass - Draw from camera's point of view
+		glClear(GL_DEPTH_BUFFER_BIT);
 
-	//3rd pass
-	//Draw with bright light
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, white);
-	glLightfv(GL_LIGHT1, GL_SPECULAR, white);
+		//glMatrixMode(GL_PROJECTION);
+		//glLoadMatrixd(cameraProjectionMatrix.getPointer());
 
-	//Calculate texture matrix for projection
-	//This matrix takes us from eye space to the light's clip space
-	//It is postmultiplied by the inverse of the current view matrix when specifying texgen
-	Matrix4 biasMatrix(0.5f, 0.0f, 0.0f, 0.0f,
-		0.0f, 0.5f, 0.0f, 0.0f,
-		0.0f, 0.0f, 0.5f, 0.0f,
-		0.5f, 0.5f, 0.5f, 1.0f);	//bias from [-1, 1] to [0, 1]
+		//glMatrixMode(GL_MODELVIEW);
+		//glLoadMatrixd(cameraViewMatrix.getPointer());
 
-	// transpose matrices to row-major before multiplying them
-	Matrix4 textureMatrix = ( biasMatrix.transpose() ) * ( lightProjectionMatrix.transpose() ) * ( lightViewMatrix.transpose() );
+		glViewport(0, 0, width, height);
+		Cam.Draw();
 
-	// now transpose textureMatrix back to column for opengl stuff
-	//textureMatrix = textureMatrix.transpose();
-	// or we can just get the necessary elements in row-major
-
-	//Set up texture coordinate generation.
-	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-	glTexGendv(GL_S, GL_EYE_PLANE, textureMatrix.getCol(0)); // textureMatrix.GetRow(0));
-	glEnable(GL_TEXTURE_GEN_S);
-
-	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-	glTexGendv(GL_T, GL_EYE_PLANE, textureMatrix.getCol(1)); //textureMatrix.GetRow(1));
-	glEnable(GL_TEXTURE_GEN_T);
-
-	glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-	glTexGendv(GL_R, GL_EYE_PLANE, textureMatrix.getCol(2)); //textureMatrix.GetRow(2));
-	glEnable(GL_TEXTURE_GEN_R);
-
-	glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
-	glTexGendv(GL_Q, GL_EYE_PLANE, textureMatrix.getCol(3)); //textureMatrix.GetRow(3));
-	glEnable(GL_TEXTURE_GEN_Q);
-
-	//Bind & enable shadow map texture
-	glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
-	glEnable(GL_TEXTURE_2D);
-
-	//Enable shadow comparison
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE);
-
-	//Shadow comparison should be true (ie not in shadow) if r<=texture
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL);
-
-	//Shadow comparison should generate an INTENSITY result
-	glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
-
-	//Set alpha test to discard false comparisons
-	glAlphaFunc(GL_GEQUAL, 0.99f);
-	glEnable(GL_ALPHA_TEST);
-
-	bunny.draw(&rotLight, &glmatrix);
-
-	//Disable textures and texgen
-	glDisable(GL_TEXTURE_2D);
-
-	glDisable(GL_TEXTURE_GEN_S);
-	glDisable(GL_TEXTURE_GEN_T);
-	glDisable(GL_TEXTURE_GEN_R);
-	glDisable(GL_TEXTURE_GEN_Q);
-
-	//Restore other states
-	glDisable(GL_LIGHTING);
-	glDisable(GL_ALPHA_TEST);
+		//Use dim light to represent shadowed areas
+		//glLightfv(GL_LIGHT1, GL_POSITION, lightPosition);
+		glLightfv(GL_LIGHT1, GL_AMBIENT, gray);
+		glLightfv(GL_LIGHT1, GL_DIFFUSE, gray);
+		glLightfv(GL_LIGHT1, GL_SPECULAR, black);
+		glEnable(GL_LIGHT1);
+		glDisable(GL_LIGHT0);
+		glEnable(GL_LIGHTING);
+		
+		if (hairModel) { hairball.draw(&rotLight, &glmatrix); }
+		else { bunny.draw(&rotLight, &glmatrix); }
 
 
-	//Set matrices for ortho
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-	gluOrtho2D(-1.0f, 1.0f, -1.0f, 1.0f);
 
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
-	glLoadIdentity();
+		//3rd pass
+		//Draw with bright light
+		glLightfv(GL_LIGHT1, GL_DIFFUSE, white);
+		glLightfv(GL_LIGHT1, GL_SPECULAR, white);
 
-	//reset matrices
-	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
+		//Calculate texture matrix for projection
+		//This matrix takes us from eye space to the light's clip space
+		//It is postmultiplied by the inverse of the current view matrix when specifying texgen
+		Matrix4 biasMatrix(0.5f, 0.0f, 0.0f, 0.0f,
+			0.0f, 0.5f, 0.0f, 0.0f,
+			0.0f, 0.0f, 0.5f, 0.0f,
+			0.5f, 0.5f, 0.5f, 1.0f);	//bias from [-1, 1] to [0, 1]
+
+		// transpose matrices to row-major before multiplying them
+		Matrix4 textureMatrix = (biasMatrix.transpose()) * (lightProjectionMatrix.transpose()) * (lightViewMatrix.transpose());
+
+		// now transpose textureMatrix back to column for opengl stuff
+		textureMatrix = textureMatrix.transpose();
+		//// or we can just get the necessary elements in row-major
+
+		////Set up texture coordinate generation.
+		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGendv(GL_S, GL_EYE_PLANE, textureMatrix.getCol(0)); // textureMatrix.GetRow(0));
+		glEnable(GL_TEXTURE_GEN_S);
+
+		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGendv(GL_T, GL_EYE_PLANE, textureMatrix.getCol(1)); //textureMatrix.GetRow(1));
+		glEnable(GL_TEXTURE_GEN_T);
+
+		glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGendv(GL_R, GL_EYE_PLANE, textureMatrix.getCol(2)); //textureMatrix.GetRow(2));
+		glEnable(GL_TEXTURE_GEN_R);
+
+		glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
+		glTexGendv(GL_Q, GL_EYE_PLANE, textureMatrix.getCol(3)); //textureMatrix.GetRow(3));
+		glEnable(GL_TEXTURE_GEN_Q);
+
+		////Bind & enable shadow map texture
+		glBindTexture(GL_TEXTURE_2D, shadowMapTexture);
+		glEnable(GL_TEXTURE_2D);
+
+		////Enable shadow comparison
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE_ARB, GL_COMPARE_R_TO_TEXTURE);
+
+		////Shadow comparison should be true (ie not in shadow) if r<=texture
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC_ARB, GL_LEQUAL);
+
+		////Shadow comparison should generate an INTENSITY result
+		glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE_ARB, GL_INTENSITY);
+
+		////Set alpha test to discard false comparisons
+		glAlphaFunc(GL_GEQUAL, 0.99f);
+		glEnable(GL_ALPHA_TEST);
+
+		if (hairModel) { hairball.draw(&rotLight, &glmatrix); }
+		else { bunny.draw(&rotLight, &glmatrix); }
+
+		////Disable textures and texgen
+		glDisable(GL_TEXTURE_2D);
+
+		glDisable(GL_TEXTURE_GEN_S);
+		glDisable(GL_TEXTURE_GEN_T);
+		glDisable(GL_TEXTURE_GEN_R);
+		glDisable(GL_TEXTURE_GEN_Q);
+
+		////Restore other states
+		glDisable(GL_LIGHTING);
+		glDisable(GL_ALPHA_TEST);
 
 
+		//Set matrices for ortho
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
+		gluOrtho2D(-1.0f, 1.0f, -1.0f, 1.0f);
+
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+
+		//reset matrices
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+
+	}
 
 	DisplayFPS();
 
@@ -403,11 +460,11 @@ void Tester::Resize(int w,int h) {
 
 
 	//Update the camera's projection matrix
-	glPushMatrix();
-	glLoadIdentity();
-	gluPerspective(45.0f, (float)width / height, 1.0f, 100.0f);
-	glGetDoublev(GL_MODELVIEW_MATRIX, cameraProjectionMatrix.getPointer());
-	glPopMatrix();
+	//glPushMatrix();
+	//glLoadIdentity();
+	//gluPerspective(45.0f, (float)width / height, 1.0f, 100.0f);
+	//glGetDoublev(GL_MODELVIEW_MATRIX, cameraProjectionMatrix.getPointer());
+	//glPopMatrix();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -435,76 +492,43 @@ void Tester::SpecCallback(int key, int x, int y) {
 		camY += .2;
 	}
 
-	// project 5 bunny
-	if (key == GLUT_KEY_F4)
+	// toggle shadowmap
+	if (key == GLUT_KEY_F1)
 	{
-		p5_bunny = true;
+		shadowMap = !shadowMap;
+		std::cout << "shadowmap is now " << shadowMap << std::endl;
+
+		// restore original properties of light 1
+		if (!shadowMap) { 
+			glLightfv(GL_LIGHT1, GL_AMBIENT, gray);
+			glLightfv(GL_LIGHT1, GL_DIFFUSE, white);
+			glLightfv(GL_LIGHT1, GL_SPECULAR, white);
+		}
 	}
 
+	// switch between models
+	if (key == GLUT_KEY_F2)
+	{
+		hairModel = !hairModel;
+		std::cout << "hairModel is now " << hairModel << std::endl;
+	}
 
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void Tester::Keyboard(int key,int x,int y) {
-	if (key == 'p')
+void Tester::Keyboard(int key, int x, int y) {
+
+	if (hairModel)
 	{
-
+		hairball.keyEvent(key);
 	}
-
-
-	else if (p5_bunny)
+	else
 	{
 		bunny.keyEvent(key);
 	}
 
-
-
-
-	//switch(key) {
-	//	case 0x1b:		// Escape
-	//		Quit();
-	//		break;
-	//	case 'E':
-	//	case 'e':		// begin collapsing all edges
-	//		beginMorph = true;
-	//		break;
-	//	case 'Q':
-	//	case 'q':		// begin undoing all edge collapses
-	//		undoMorph = true;
-	//		break;
-	//	case '1':		// switch to smooth shading
-	//		glShadeModel(GL_SMOOTH);
-	//		break;
-	//	case '2':		// switch to flat shading
-	//		glShadeModel(GL_FLAT);
-	//		break;
-	//	case '3':		// toggle colors
-	//		mesh.coloredTriangles = !mesh.coloredTriangles;
-	//		break;
-	//	case 'W':
- //       case 'w':mesh.MoveY(-1); // translation stuff
- //           break;
-	//	case 'S':
- //       case 's':mesh.MoveY(1);
- //           break;
-	//	case 'A':
- //       case 'a':mesh.MoveX(1);
- //           break;
-	//	case 'D':
- //       case 'd':mesh.MoveX(-1);
- //           break;
-	//	case 'I':
- //       case 'i':mesh.MoveZ(-1); // zooming stuff
- //           break;
-	//	case 'O':
- //       case 'o':mesh.MoveZ(1);
- //           break;
-	//	case 'r':
-	//		Reset();
-	//		break;
-	//}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -587,61 +611,6 @@ Vector3 Tester::trackBallMapping(int x, int y)
 ////////////////////////////////////////////////////////////////////////////////
 
 void Tester::MouseMotion(int nx,int ny) {
-
-	//Vector3 direction;
-	//float pixel_diff;
-	//float rot_angle;
-	//float zoom_factor;
-	//Vector3 curPoint;
-
-
-	//switch (movement)
-	//{
-	//case ROTATE: // left mouse button is held down
-	//{
-	//	curPoint = trackBallMapping(nx, ny); // map position to a sphere location
-	//	direction = curPoint - lastPos;
-	//	float velocity = direction.length();
-
-	//	if (velocity > 0.0001) // If little movement - do nothing
-	//	{
-	//		std::cout << "ROTATING" << std::endl;
-
-	//		// rotate around axis that's perpendicular to circle connecting mouse movements
-	//		Vector3 rotAxis = curPoint.cross(lastPos);
-	//		//Vector3 rotAxis = Globals::lastPos.cross(curPoint);
-	//		rotAxis.print("rotation axis");
-	//		rotAxis = rotAxis.normalize();
-	//		//Vector3 rotAxis = Vector3(0, 1, 0);
-	//		rot_angle = velocity * ROTSCALE;
-
-	//		if (p5_bunny)
-	//		{
-	//			bunny.setArbitAngle(rot_angle);
-	//			bunny.setAxis(rotAxis);
-
-	//		}
-	//	}
-	//	break;
-	//}
-	//case ZOOM:
-	//{
-	//	std::cout << "ZOOMING" << std::endl;
-	//	pixel_diff = nx - lastPos.getX();
-	//	zoom_factor = 1.0 + pixel_diff * ZOOMSCALE;
-
-	//	if (p5_bunny)
-	//	{
-	//		bunny.setScale2(zoom_factor);
-	//	}
-	//	break;
-	//}
-	//}
-
-	//lastPos = curPoint;
-
-
-
 	int dx = nx - mousex;
 	int dy = -(ny - mousey);
 

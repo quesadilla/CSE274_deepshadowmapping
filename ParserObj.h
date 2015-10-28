@@ -19,6 +19,8 @@ protected:
 
 	Matrix4 S;
 	Matrix4 S2;
+	Matrix4 backgroundScale;
+	Matrix4 backgroundMat;
 	Matrix4 model2world;
 
 	double angleZ;

@@ -20,6 +20,7 @@ public:
 	void bearMaterial();
 	Matrix4& getMatrix();
 	int getSpin();
+	void resetLightValues();
 
 	~Light();
 };

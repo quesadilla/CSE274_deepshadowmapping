@@ -75,7 +75,8 @@ private:
 
 
 	// modes
-	bool p5_bunny;
+	bool shadowMap;
+	bool hairModel;
 
 	double camX;
 	double camY;
@@ -99,6 +100,7 @@ private:
 	// Components
 	ProfCamera Cam;
 	ParserObj bunny;
+	ParserObj hairball;
 	Vector3 lastPos;
 	Light rotLight;
 };

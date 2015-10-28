@@ -1,21 +1,22 @@
 #include "Light.h"
 
+// light properties 0
+GLfloat light_ambient[] = { 0.0, 0.0, 0.0, 1.0 }; // default
+GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 }; // default
+GLfloat light_position[] = { 1.0, 2.0, 1.0, 0.0 };
+
+// light properties 1
+GLfloat light_ambient1[] = { 0.0, 0.0, 0.0, 1.0 }; // default
+GLfloat light_diffuse1[] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat light_specular1[] = { 1.0, 1.0, 1.0, 1.0 }; // default
+GLfloat light_position1[] = { 1.0, 0.0, 4.0, 1.0 };
+GLfloat spot_direction[] = { 0.0, 0.0, -1.0 };
+
 Light::Light()
 {
 	spinning = 1.5;
 
-	// light properties 0
-	GLfloat light_ambient[] = { 0.0, 0.0, 0.0, 1.0 }; // default
-	GLfloat light_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
-	GLfloat light_specular[] = { 1.0, 1.0, 1.0, 1.0 }; // default
-	GLfloat light_position[] = { 1.0, 2.0, 1.0, 0.0 };
-
-	// light properties 1
-	GLfloat light_ambient1[] = { 0.0, 0.0, 0.0, 1.0 }; // default
-	GLfloat light_diffuse1[] = { 1.0, 0.0, 0.0, 1.0 };
-	GLfloat light_specular1[] = { 1.0, 1.0, 1.0, 1.0 }; // default
-	GLfloat light_position1[] = { 1.0, 0.0, 4.0, 1.0 };
-	GLfloat spot_direction[] = { 0.0, 0.0, -1.0 };
 
 	// set light properties 0
 	glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
@@ -36,7 +37,7 @@ Light::Light()
 	glMatrixMode(GL_PROJECTION);
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_LIGHTING);
-	glEnable(GL_LIGHT0);
+	//glEnable(GL_LIGHT0);
 	glEnable(GL_LIGHT1);
 	glEnable(GL_DEPTH_TEST);
 	glClear(GL_DEPTH_BUFFER_BIT);
@@ -48,6 +49,29 @@ Light::Light()
 	spotlightMatrix = Matrix4::makeTranslate(1, 0, 4) * spotlightMatrix;
 
 }
+
+void Light::resetLightValues()
+{
+
+	// set light properties 1
+	glLightfv(GL_LIGHT1, GL_AMBIENT, light_ambient1);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, light_diffuse1);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, light_specular1);
+	glLightfv(GL_LIGHT1, GL_POSITION, light_position1);
+	glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, spot_direction);
+	glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 30.0);
+
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glMatrixMode(GL_PROJECTION);
+	glShadeModel(GL_SMOOTH);
+	glEnable(GL_LIGHTING);
+	//glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_DEPTH_BUFFER_BIT);
+}
+
+
 
 void Light::bunnyMaterial()
 {
@@ -96,15 +120,15 @@ void Light::display()
 
 	// ---------------  Light 0
 
-	Matrix4 transpose = lightMatrix.transpose();
+	//Matrix4 transpose = lightMatrix.transpose();
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadMatrixd(transpose.getPointer());
+	//glMatrixMode(GL_MODELVIEW);
+	//glLoadMatrixd(transpose.getPointer());
 
 
 	//glDisable(GL_LIGHTING);
-	glColor3f(0.0, 0.0, 1.0);
-	glutSolidSphere(0.8, 20, 20);
+	//glColor3f(0.0, 0.0, 1.0);
+	//glutSolidSphere(0.8, 20, 20);
 	//glEnable(GL_LIGHTING);
 
 	// --------- Light 1

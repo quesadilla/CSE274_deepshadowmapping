@@ -13,6 +13,10 @@ ParserObj::ParserObj()
 	objScale2 = 1;
 	S = S.makeScale(objScale, objScale, objScale);
 	S2 = S2.makeScale(objScale2, objScale2, objScale2);
+
+	backgroundScale = backgroundScale.makeScale(objScale, objScale, objScale);
+	backgroundMat = Matrix4::identity() * backgroundScale;
+
 	model2world = Matrix4::identity() * S;
 	angleZ = 0.0;
 	angleY = 0.0;
@@ -27,8 +31,16 @@ void ParserObj::update()
 {
 	S = S.makeScale(objScale, objScale, objScale);
 	S2 = S2.makeScale(objScale2, objScale2, objScale2);
+	backgroundScale = backgroundScale.makeScale(2, 2, 2);
+
 	model2world = Matrix4::identity() * Matrix4::makeRotateX(angleX) \
 		* Matrix4::makeRotateY(angleY) * Matrix4::makeRotateZ(angleZ);
+	// ------------------
+	backgroundMat = model2world;
+	backgroundMat = backgroundMat * backgroundScale;
+	backgroundMat = backgroundMat * Matrix4::makeRotate(arbitAngle, axis);
+	// ------------------
+
 	model2world = model2world * S2 * S;
 	model2world = model2world * Matrix4::makeRotate(arbitAngle, axis);
 }
@@ -43,9 +55,12 @@ void ParserObj::draw(Light * rotLight, Matrix4 * glmatrix)
 	// camera.recalculateMatrix(e, d, up);
 
 	//rotLight->bunnyMaterial();
+	glmatrix = &backgroundMat;
+	glmatrix = &(glmatrix->transpose()); // change to column-order
+	glMatrixMode(GL_MODELVIEW);
+	glLoadMatrixd(glmatrix->getPointer());
 
 	rotLight->display();
-
 
 	// load the camera
 	glmatrix = &getMatrix();
@@ -146,6 +161,12 @@ void ParserObj::draw(Light * rotLight, Matrix4 * glmatrix)
 
 	glEnd();
 
+	// matrix could differ for background
+	glmatrix = &backgroundMat;
+	glmatrix = &(glmatrix->transpose()); // change to column-order
+	glMatrixMode(GL_MODELVIEW);
+	glLoadMatrixd(glmatrix->getPointer());
+
 	// ground
 	glColor3f(0.0f, 0.0f, 1.0f);
 	glPushMatrix();
@@ -157,7 +178,7 @@ void ParserObj::draw(Light * rotLight, Matrix4 * glmatrix)
 	glPopMatrix();
 
 	// back wall
-	glColor3f(1.0f, 1.0f, 1.0f);
+	glColor3f(0.0f, 1.0f, 1.0f);
 	glPushMatrix();
 
 	glTranslatef(0.0f, 2.0f, -2.0f);
