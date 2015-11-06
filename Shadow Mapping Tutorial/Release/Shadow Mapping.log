@@ -1,0 +1,26 @@
+﻿Build started 11/5/2015 10:28:14 PM.
+     1>Project "C:\Users\Jade\Documents\Visual Studio 2013\Projects\Shadow Mapping Tutorial\Shadow Mapping.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"C:\glut\glut-3.7.6-bin" /Zi /nologo /W3 /WX- /O2 /Ob1 /Oy- /D WIN32 /D NDEBUG /D _CONSOLE /D _CRT_SECURE_NO_DEPRECATE /D _VC80_UPGRADE=0x0600 /D _MBCS /GF /Gm- /EHsc /MT /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo".\Release/" /Fd".\Release/vc120.pdb" /Gd /TP /analyze- /errorReport:prompt scene.cpp
+         scene.cpp
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:".\Release/Shadow Mapping.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\glut\glut-3.7.6-bin" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:".\Release/Shadow Mapping.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:".\Release\Shadow Mapping.lib" /MACHINE:X86 /SAFESEH /SAFESEH:NO .\Release/FPS_COUNTER.obj
+         .\Release/Light.obj
+         .\Release/main.obj
+         .\Release/Matrix4.obj
+         .\Release/ParserObj.obj
+         .\Release/scene.obj
+         .\Release/TIMER.obj
+         .\Release/COLOR.obj
+         .\Release/MATRIX4X4.obj
+         .\Release/PLANE.obj
+         .\Release/VECTOR2D.obj
+         .\Release/VECTOR3D.obj
+         .\Release/VECTOR4D.obj
+         .\Release/GLee.obj
+         Shadow Mapping.vcxproj -> C:\Users\Jade\Documents\Visual Studio 2013\Projects\Shadow Mapping Tutorial\.\Release\Shadow Mapping.exe
+     1>Done Building Project "C:\Users\Jade\Documents\Visual Studio 2013\Projects\Shadow Mapping Tutorial\Shadow Mapping.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:01.19
